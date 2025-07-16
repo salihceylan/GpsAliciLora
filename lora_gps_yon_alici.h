@@ -4,7 +4,9 @@
 #include <SPI.h>
 #include <LoRa.h>
 #include <ArduinoJson.h>
+#include <TinyGPSPlus.h>
 
+// LoRa pinleri
 #define LORA_SCK 6
 #define LORA_MISO 4
 #define LORA_MOSI 5
@@ -12,12 +14,17 @@
 #define LORA_RST 15
 #define LORA_DIO0 16
 
+// 📍 Trafik lambasının sabit konumu
+#define TRAFIK_LAT 38.604800
+#define TRAFIK_LON 27.086900
+
 const char* AUTH_KEY = "Y3p97zXq!";
 bool lora_durum = false;
 
+extern bool ambulans_yakinda;
+extern unsigned long son_ambulans_gorulme;
 
-
-// Ambulans ID kontrolü fonksiyonunu burada bırakabilirsin
+// Ambulans kimliği kontrolü
 bool ambulans_tanimli(const char* gelen_id) {
   const char* izinli_ambulanslar[] = { "35ABC35", "34XYZ99" };
   for (int i = 0; i < sizeof(izinli_ambulanslar) / sizeof(izinli_ambulanslar[0]); i++) {
@@ -25,7 +32,6 @@ bool ambulans_tanimli(const char* gelen_id) {
   }
   return false;
 }
-
 
 void lora_gps_yon_alici_baslat() {
   SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
@@ -35,8 +41,8 @@ void lora_gps_yon_alici_baslat() {
     Serial.println("❌ LoRa başlatılamadı!");
     lora_durum = false;
   } else {
-    LoRa.setSpreadingFactor(12);     // max menzil, min hız
-    LoRa.setSignalBandwidth(125E3);  // 125 kHz (varsayılan)
+    LoRa.setSpreadingFactor(12);
+    LoRa.setSignalBandwidth(125E3);
     LoRa.setCodingRate4(5);
     Serial.println("✅ LoRa alıcı başlatıldı.");
     lora_durum = true;
@@ -64,39 +70,45 @@ void lora_verisini_kontrol_et() {
       return;
     }
 
-    // 🔐 Güvenlik kontrolü
     const char* gelenAuth = doc["auth"];
     if (strcmp(gelenAuth, AUTH_KEY) != 0) {
       Serial.println("⛔ Yetkisiz paket! Reddedildi.");
       return;
     }
 
-    // ✅ Verileri oku
+    const char* gelen_id = doc["id"];
     float heading = doc["heading"];
     float lat = doc["lat"];
     float lon = doc["lon"];
     float hiz = doc["hiz"];
-    float yukseklik = doc["yukseklik"];
-    int uydu = doc["uydu"];
 
-    // 🧭 Verileri göster
-    Serial.println("🌍 GPS + Yön Verisi:");
-    Serial.print("Yön (Baş): ");
+    // 📝 Gelen veriyi HER ZAMAN göster
+    Serial.println("🚑 Ambulans ID: " + String(gelen_id));
+    Serial.print("Yön: ");
     Serial.print(heading);
     Serial.println("°");
-    Serial.print("Enlem:     ");
-    Serial.println(lat, 6);
-    Serial.print("Boylam:    ");
+    Serial.print("Konum: ");
+    Serial.print(lat, 6);
+    Serial.print(", ");
     Serial.println(lon, 6);
-    Serial.print("Hız:       ");
+    Serial.print("Hız: ");
     Serial.print(hiz);
     Serial.println(" km/h");
-    Serial.print("Yükseklik: ");
-    Serial.print(yukseklik);
-    Serial.println(" m");
-    Serial.print("Uydu Sayısı: ");
-    Serial.println(uydu);
-    Serial.println("-----");
+    Serial.println("---------------------");
+
+    // ✅ Işık müdahale kontrolü burada
+    if (ambulans_tanimli(gelen_id)) {
+      float mesafe = TinyGPSPlus::distanceBetween(lat, lon, TRAFIK_LAT, TRAFIK_LON);
+      Serial.print("📏 Mesafe: ");
+      Serial.print(mesafe);
+      Serial.println(" m");
+
+      if (mesafe < 1000) {
+        ambulans_yakinda = true;
+        son_ambulans_gorulme = millis();
+        Serial.println("✅ Ambulans Etki Alanında! YEŞİL Zorla Açıldı.");
+      }
+    }
   }
 }
 

@@ -19,12 +19,12 @@ void setup() {
   lora_gps_yon_alici_baslat();
   LoRa.setTxPower(20);
   digitalWrite(LORA_LED, lora_durum ? HIGH : LOW);
-  
+  trafik_isik_baslat();
 }
 
 void loop() {
 
  lora_verisini_kontrol_et();
- trafik_durumu_guncelle(); 
+ trafik_isik_guncelle(); 
   delay(500);
 }
