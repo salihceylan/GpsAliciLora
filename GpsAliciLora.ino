@@ -2,6 +2,8 @@
 #include "psram.h"
 #include "wifi_baglanti.h"
 #include "lora_gps_yon_alici.h"
+#include "trafik_isiklari_kontrol.h"
+
 
 
 #define LORA_LED 18
@@ -23,5 +25,6 @@ void setup() {
 void loop() {
 
  lora_verisini_kontrol_et();
+ trafik_durumu_guncelle(); 
   delay(500);
 }

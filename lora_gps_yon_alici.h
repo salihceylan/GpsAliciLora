@@ -15,6 +15,18 @@
 const char* AUTH_KEY = "Y3p97zXq!";
 bool lora_durum = false;
 
+
+
+// Ambulans ID kontrolü fonksiyonunu burada bırakabilirsin
+bool ambulans_tanimli(const char* gelen_id) {
+  const char* izinli_ambulanslar[] = { "35ABC35", "34XYZ99" };
+  for (int i = 0; i < sizeof(izinli_ambulanslar) / sizeof(izinli_ambulanslar[0]); i++) {
+    if (strcmp(gelen_id, izinli_ambulanslar[i]) == 0) return true;
+  }
+  return false;
+}
+
+
 void lora_gps_yon_alici_baslat() {
   SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
   LoRa.setPins(LORA_CS, LORA_RST, LORA_DIO0);

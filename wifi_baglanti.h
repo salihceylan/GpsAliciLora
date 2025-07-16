@@ -3,8 +3,8 @@
 
 #include <WiFi.h>
 
-const char *ssid = "Fingon";
-const char *password = "Fingon08";
+const char *ssid = "esp32";
+const char *password = "asdfgh12";
 
 void baglanWiFi() {
   WiFi.begin(ssid, password);
